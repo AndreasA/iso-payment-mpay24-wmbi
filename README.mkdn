@@ -41,7 +41,7 @@ When the Confirmation Interface is called by mPay24, the module calls mPay24 bac
 License
 -------
 
-GNU General Public License
+GNU Lesser General Public License
 
 Disclaimer
 ----------

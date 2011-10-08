@@ -23,8 +23,8 @@
  * PHP version 5
  * @copyright  Wolfgang Plaschg 2011 
  * @author     Wolfgang Plaschg <wolfgang.plaschg@gmail.com> 
- * @package    PaymentMPay24 
- * @license    GNU/LGPL 
+ * @package    isotope_pymt_mpay24_wmbi
+ * @license    LGPL 
  * @filesource
  */
 

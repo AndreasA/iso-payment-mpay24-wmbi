@@ -22,7 +22,7 @@
  * @copyright  Wolfgang Plaschg 2011
  * @author     Wolfgang Plaschg <wolfgang.plaschg@gmail.com>
  * @package    isotope_pymt_mpay24_wmbi
- * @license    GPL
+ * @license    LGPL
  */
  
  
