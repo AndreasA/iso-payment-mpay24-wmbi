@@ -218,7 +218,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 			$this->log('Request Error: ' . $objRequest->error, 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 			exit;
 		}
-		$this->log_confirmation("Requested Transaction Status: " . $objRequest->response);
+		$this->log_confirmation("Requested Transaction Status: " . urldecode($objRequest->response));
 
 		// Split lines, since answer is delivered in two lines
 		$lines = explode("\n", $objRequest->response);
