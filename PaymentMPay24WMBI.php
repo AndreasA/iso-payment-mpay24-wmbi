@@ -280,15 +280,12 @@ class PaymentMPay24WMBI extends IsotopePayment
 		$arrPayment['status'] = $this->Input->get('STATUS');
 		$arrData['new_payment_status'] = $arrPayment['status'];
 		
+		// Store payment data
+		$objOrder->payment_data = $arrPayment;
+
 		switch(strtoupper($this->Input->get('STATUS')))
 		{
-			case 'CREDITED': // Gutgeschrieben
-				// Do nothing here
-				$this->log('Payments credited for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
-				break;
 			case 'RESERVED':
-				// Do nothing here
-				$this->log('Payments reserved for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 				break;
 			case 'BILLED':
 				$objOrder->date_payed = time();
@@ -298,25 +295,21 @@ class PaymentMPay24WMBI extends IsotopePayment
 					$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 					return;
 				} 
+				$this->log('Payments billed for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 				break;
+			case 'CREDITED': // Gutgeschrieben
 			case 'REVERSED':
 			case 'SUSPENDED':
 				$objOrder->date_payed = '';
 				$objOrder->status = 'on_hold';
 				$objOrder->save();
-				$this->log('Payments reversed from Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+				$this->log('Payments reversed for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 			case 'ERROR':
 				$this->log('Error status for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 		}
 
-		// Store payment data
-		$objOrder->payment_data = $arrPayment;
-		$objOrder->save();
-
-		$this->log('Postsale data accepted ' . print_r($_GET, true), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
-		
 		header('HTTP/1.1 200 OK');
 		exit;
 	}
