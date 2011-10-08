@@ -25,6 +25,12 @@ In addition to this mandatory settings, the module offers some expert settings:
 
 * The WMBI requires a 'Confirmation Interface' where mPay24 can callback the shop and report about changes in the billing status of an order. This Confirmation Interface is provided by the `postsale.php` script of Isotope. It is assumed that this file can be called from outside via the URL [your-contao-base]/system/modules/isotope/postsale.php. It is recommended to protect this script from unwanted access. In case you protect it via HTTP AUTH you can specify the username and password in the module settings. 
 
+You don't have to set the Success, Error, Cancel and Confirmation-URLs at the mPay24 Web Interface, as they are provided with the request to the WMBI. 
+
+Transaction ID: The module uses the column `id` of the order for the transaction id (TID), not the `order_id` as it is calculated in the checkout process. 
+
+If you want to change the appearance of the WMBI, edit the `templates/mpay24_mdxi.*` template. Depending in your theme setting, either the `.html5` or `.xhtml` variant is used. For a detailed list of the available settings take a look at the mPay24 specification.
+
 Confirmation Interface
 ----------------------
 
