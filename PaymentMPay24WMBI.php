@@ -256,20 +256,6 @@ class PaymentMPay24WMBI extends IsotopePayment
 			return;
 		}
 
-		$objOrder = new IsotopeOrder();
-
-		if (!$objOrder->findBy('id', $this->Input->get('TID')))
-		{
-			$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			return;
-		}
-
-		if (!$objOrder->checkout())
-		{
-			$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			return;
-		}
-
 		// Set the current system to the language when the user placed the order.
 		// This will result in correct e-mails and payment description.
 		$GLOBALS['TL_LANGUAGE'] = $objOrder->language;
@@ -287,31 +273,47 @@ class PaymentMPay24WMBI extends IsotopePayment
 		$arrPayment['status'] = $this->Input->get('STATUS');
 		$arrData['new_payment_status'] = $arrPayment['status'];
 		
-		// array('pending', 'complete', 'on_hold', 'cancelled'),
-		switch($this->Input->get('STATUS'))
+		$objOrder = new IsotopeOrder();
+		if (!$objOrder->findBy('id', $this->Input->get('TID')))
 		{
-			case 'CREDITED':
+			$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+			return;
+		}
+
+		switch(strtoupper($this->Input->get('STATUS')))
+		{
+			case 'CREDITED': // Gutgeschrieben
+				// Do nothing here
+				break;
 			case 'RESERVED':
 				// Do nothing here
 				break;
 			case 'BILLED':
 				$objOrder->date_payed = time();
 				$objOrder->status = 'complete';
+				$objOrder->new_order_status = 'complete';
 				break;
 			case 'REVERSED':
 			case 'SUSPENDED':
 				$objOrder->date_payed = '';
-				if ($objOrder->status == 'complete')
-					$objOrder->status = 'on_hold';
+				$objOrder->status = 'on_hold';
+				$objOrder->new_order_status = 'on_hold';
 				break;
 			case 'ERROR':
 				break;
 		}
 		
+		if (!$objOrder->checkout_complete) {
+			if (!$objOrder->checkout())
+			{
+				$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+				return;
+			}
+		} else
+			$objOrder->save();
+
 		// Store payment data
 		$objOrder->payment_data = $arrPayment;
-
-		$objOrder->save();
 
 		$this->log('Postsale data accepted ' . print_r($_GET, true), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 		
