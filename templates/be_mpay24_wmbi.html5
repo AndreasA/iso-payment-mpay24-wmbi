@@ -1,0 +1,10 @@
+<div id="tl_buttons">
+	<a href="<?php echo $this->href; ?>" class="header_back" title="<?php echo $this->title; ?>" accesskey="b" onclick="Backend.getScrollOffset();"><?php echo $this->link; ?></a>
+</div>
+<h2 class="sub_headline"><?php echo $this->h2; ?></h2>
+<table cellspacing="0" cellpadding="0" summary="Table lists all details of the payment by mpay24" class="tl_show">
+    <tr>
+        <td><span class="tl_label"><?php echo $this->label; ?>: </span></td>
+        <td><?php echo $this->text; ?></td>
+    </tr>
+</table>

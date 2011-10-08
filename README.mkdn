@@ -1,0 +1,43 @@
+Payment Module for Isotope eCommerce Webshop
+============================================
+
+This is a payment module to access mPay24 WMBI (Webbased Merchant Billing Interface "WMBI") from the isotope eCommerce Module for Contao (http://www.isotopeecommerce.com). 
+
+Installation
+------------
+
+Extract the files into `isotope_pymt_mpay24_wmbi` inside the `systems/modules` folder of your Contao installation.
+
+Usage
+-----
+
+Add the module at the payments section of your shop configuration. Besides the usual payment options, theses options are specific to mPay24 WMBI:
+
+* Merchant ID: Provide your merchant id here. 
+
+* Checkout Page: Provide the page with the checkout module. This page is used to jumb back from the WMBI in case of successful billing, user cancellation or failure. 
+
+In addition to this mandatory settings, the module offers some expert settings:
+
+* To test your configuration you can check the `test mode` checkbox. Instead of the URL to the production WMBI the URL to the test WMBI is called. 
+
+* You can also change the URLs to the WMBI, but this is not likely to be needed.
+
+* The WMBI requires a 'Confirmation Interface' where mPay24 can callback the shop and report about or change the billing status of an order. This Confirmation Interface is provided by the postsale.php script of Isotope. It is assumed that this file can be called from outside via the URL <your-contao-base>/system/modules/isotope/postsale.php. It is recommended to protect this script from unwanted access. In case you protect it via HTTP AUTH you can specify the username and password in the module settings. 
+
+Confirmation Interface
+----------------------
+
+The order is checked out by the Confirmation Interface (postsale.php) of your Isotope Installation. Make sure it can be called from the WMBI. The URL is calculated at Line 139 of `PaymentMPay24WMBI` by adding `system/modules/isotope/postsale.php` to the Contao base URI. 
+
+When the Confirmation Interface is called by mPay24, the module calls mPay24 back and compares the billing statuses to protect against unauthorized calls. If the two statuses do not match, the checkout process is cancelled. 
+
+License
+-------
+
+GNU General Public License
+
+Disclaimer
+----------
+
+This module is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.

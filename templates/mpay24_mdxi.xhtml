@@ -1,0 +1,53 @@
+<?php echo '<?xml version="1.0" encoding="UTF-8"?>'; ?>
+<Order
+	Style="font-family: Helvetica, Arial, sans-serif; font-size: 90%; margin-top: 20px; margin-left:auto; margin-right: auto; width:600px;"
+	LogoStyle="margin-left:300px; margin-bottom: 10px;">
+<Tid><?php echo $this->tid; ?></Tid>
+<?php if ($this->showShoppingCart): ?>
+	<ShoppingCart>
+		<?php foreach($this->items as $item): ?>
+			<Item>
+				<ProductNr><?php echo $item["productNr"]; ?></ProductNr>
+				<Description><?php echo $item["description"]; ?></Description>
+				<Quantity><?php echo $item["quantity"]; ?></Quantity>
+				<ItemPrice><?php echo $item["itemPrice"]; ?></ItemPrice>
+				<Price><?php echo $item["price"]; ?></Price>
+			</Item>
+		<?php endforeach; ?>
+		<SubTotal><?php echo $this->subTotal; ?></SubTotal>
+		<Tax><?php echo $this->tax; ?></Tax>
+	</ShoppingCart>
+<?php endif; ?>
+<Price><?php echo $this->price; ?></Price>
+<Currency><?php echo $this->currency; ?></Currency>
+<?php if ($this->customerId): ?>
+<Customer Id="<?php echo $this->customerId; ?>"
+	  UseProfile="<?php if ($this->useCustomerProfile) echo 'true'; else echo 'false'; ?>" />
+<?php endif; ?>
+<?php if ($this->showBillingAddr): ?>
+	<BillingAddr Mode="ReadOnly">
+		<Name><?php echo $this->billingName; ?></Name>
+		<Street><?php echo $this->billingStreet; ?></Street>
+		<Street2><?php echo $this->billingStreet2; ?></Street2>
+		<Zip><?php echo $this->billingZip; ?></Zip>
+		<City><?php echo $this->billingCity; ?></City>
+		<State><?php echo $this->billingState; ?></State>
+		<Country><?php echo $this->billingCountry; ?></Country>
+		<Email><?php echo $this->billingEmail; ?></Email>
+	</BillingAddr>
+<?php endif; ?>
+<URL>
+	<?php if (strlen($this->successUrl)): ?>
+		<Success><?php echo $this->successUrl; ?></Success>
+	<?php endif; ?>
+	<?php if (strlen($this->errorUrl)): ?>
+		<Error><?php echo $this->errorUrl; ?></Error>
+	<?php endif; ?>
+	<?php if (strlen($this->confirmationUrl)): ?>
+		<Confirmation><?php echo $this->confirmationUrl; ?></Confirmation>
+	<?php endif; ?>
+	<?php if (strlen($this->cancelUrl)): ?>
+		<Cancel><?php echo $this->cancelUrl; ?></Cancel>
+	<?php endif; ?>
+</URL>
+</Order>
