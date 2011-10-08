@@ -1,7 +1,7 @@
-Payment Module for Isotope eCommerce Webshop
-============================================
+mPay24 Payment Module for Isotope eCommerce Webshop
+===================================================
 
-This is a payment module to access mPay24 WMBI (Webbased Merchant Billing Interface) from the Isotope eCommerce Module for Contao (http://www.isotopeecommerce.com). 
+This is a payment module to access [mPay24 WMBI](http://www.mpay24.com) (Webbased Merchant Billing Interface) from the [Isotope eCommerce Module](http://www.isotopeecommerce.com) for [Contao](http://www.contao.org/). 
 
 Installation
 ------------
@@ -28,7 +28,7 @@ In addition to this mandatory settings, the module offers some expert settings:
 Confirmation Interface
 ----------------------
 
-The order is checked out by the Confirmation Interface (postsale.php) of your Isotope Installation. Make sure it can be called from mPay24. The URL is calculated at Line 139 of `PaymentMPay24WMBI` by adding `system/modules/isotope/postsale.php` to the Contao base URI in case you want to check the exact value of it.
+The order is checked out by the Confirmation Interface (postsale.php) of your Isotope Installation. Make sure it can be called from mPay24. The URL is calculated [here](https://github.com/wplaschg/iso-payment-mpay24-wmbi/blob/master/PaymentMPay24WMBI.php#L134) by adding `system/modules/isotope/postsale.php` to the Contao base URI in case you want to check the exact value of it.
 
 When the Confirmation Interface is called by mPay24, the module calls mPay24 back and compares the billing statuses to protect against unauthorized calls. If the two statuses do not match, the checkout process is cancelled. 
 
