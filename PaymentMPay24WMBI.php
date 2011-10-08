@@ -119,8 +119,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 		// Prepare Return URLs
 		if ($this->mpay24_wmbi_checkout_jumpTo) {
 			$objPage = $this->Database->prepare("SELECT id, alias FROM tl_page WHERE id=?")->limit(1)->execute($this->mpay24_wmbi_checkout_jumpTo);
-			$objMdxiTemplate->successUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/complete/uid/" . $objOrder->uniqid);
-			$objMdxiTemplate->errorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/failed/uid/" . $objOrder->uniqid);
+			$objMdxiTemplate->successUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row()) . "?step=complete&amp;uid=" . $objOrder->uniqid;
+			$objMdxiTemplate->errorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row()) . "?step=failed&amp;uid=" . $objOrder->uniqid;
 			$objMdxiTemplate->cancelUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/payment");
 		}
 		if (strlen($this->mpay24_wmbi_confirmation_username)) {
@@ -256,6 +256,13 @@ class PaymentMPay24WMBI extends IsotopePayment
 			return;
 		}
 
+		$objOrder = new IsotopeOrder();
+		if (!$objOrder->findBy('id', $this->Input->get('TID')))
+		{
+			$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+			return;
+		}
+
 		// Set the current system to the language when the user placed the order.
 		// This will result in correct e-mails and payment description.
 		$GLOBALS['TL_LANGUAGE'] = $objOrder->language;
@@ -273,47 +280,40 @@ class PaymentMPay24WMBI extends IsotopePayment
 		$arrPayment['status'] = $this->Input->get('STATUS');
 		$arrData['new_payment_status'] = $arrPayment['status'];
 		
-		$objOrder = new IsotopeOrder();
-		if (!$objOrder->findBy('id', $this->Input->get('TID')))
-		{
-			$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			return;
-		}
-
 		switch(strtoupper($this->Input->get('STATUS')))
 		{
 			case 'CREDITED': // Gutgeschrieben
 				// Do nothing here
+				$this->log('Payments credited for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 				break;
 			case 'RESERVED':
 				// Do nothing here
+				$this->log('Payments reserved for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 				break;
 			case 'BILLED':
 				$objOrder->date_payed = time();
-				$objOrder->status = 'complete';
 				$objOrder->new_order_status = 'complete';
+				if (!$objOrder->checkout())
+				{
+					$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+					return;
+				} 
 				break;
 			case 'REVERSED':
 			case 'SUSPENDED':
 				$objOrder->date_payed = '';
 				$objOrder->status = 'on_hold';
-				$objOrder->new_order_status = 'on_hold';
+				$objOrder->save();
+				$this->log('Payments reversed from Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 			case 'ERROR':
+				$this->log('Error status for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 		}
-		
-		if (!$objOrder->checkout_complete) {
-			if (!$objOrder->checkout())
-			{
-				$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-				return;
-			}
-		} else
-			$objOrder->save();
 
 		// Store payment data
 		$objOrder->payment_data = $arrPayment;
+		$objOrder->save();
 
 		$this->log('Postsale data accepted ' . print_r($_GET, true), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 		
