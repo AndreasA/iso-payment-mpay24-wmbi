@@ -123,8 +123,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 			$objMdxiTemplate->errorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row()) . "?step=failed&amp;uid=" . $objOrder->uniqid;
 			$objMdxiTemplate->cancelUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/payment");
 		}
+		$strBase = $this->Environment->base;
 		if (strlen($this->mpay24_wmbi_confirmation_username)) {
-			$strBase = $this->Environment->base;
 			$strAuthInfo = $this->mpay24_wmbi_confirmation_username . ":" . $this->mpay24_wmbi_confirmation_password . "@";
 			if (substr($strBase, 0, 7) == "http://")
 				$strBase = "http://" . $strAuthInfo . substr($strBase, 7);
@@ -292,10 +292,10 @@ class PaymentMPay24WMBI extends IsotopePayment
 				$objOrder->new_order_status = 'complete';
 				if (!$objOrder->checkout())
 				{
-					$this->log('Checkout for Order ID "' . $this->Input->get('TID') . '" failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+					$this->log('Checkout for order ID ' . $this->Input->get('TID') . ' failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 					return;
 				} 
-				$this->log('Payments billed for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
+				$this->log('Payments billed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
 				break;
 			case 'CREDITED': // Gutgeschrieben
 			case 'REVERSED':
@@ -303,10 +303,10 @@ class PaymentMPay24WMBI extends IsotopePayment
 				$objOrder->date_payed = '';
 				$objOrder->status = 'on_hold';
 				$objOrder->save();
-				$this->log('Payments reversed for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+				$this->log('Payments reversed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 			case 'ERROR':
-				$this->log('Error status for Order ID "' . $this->Input->get('TID') . '"', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+				$this->log('Error status for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 				break;
 		}
 
