@@ -131,7 +131,10 @@ class PaymentMPay24WMBI extends IsotopePayment
 			else if (substr($strBase, 0, 8) == "https://")
 				$strBase = "https://" . $strAuthInfo . substr($strBase, 8);
 		}
-		$objMdxiTemplate->confirmationUrl = $strBase."system/modules/isotope/postsale.php?mod=pay&amp;id=".$this->id;
+		// Set the session variable MPAY24_USER_DATA to provide additional data to the postsale.php script.
+		if ($_SESSION['MPAY24_USER_DATA'])
+			$strUserData = "user_data=" . urlencode($_SESSION["MPAY24_USER_DATA"]) . "&amp;";
+		$objMdxiTemplate->confirmationUrl = $strBase."system/modules/isotope/postsale.php?".$strUserData."mod=pay&amp;id=".$this->id;
 
 		// Customer ID
 		if ($objOrder->pid > 0) {
