@@ -291,6 +291,11 @@ class PaymentMPay24WMBI extends IsotopePayment
 			case 'RESERVED':
 				break;
 			case 'BILLED':
+				if ($objOrder->status == 'complete')
+				{
+					$this->log('Order ID ' . $this->Input->get('TID') . ' already complete', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+					return;
+				}
 				$objOrder->date_payed = time();
 				$objOrder->new_order_status = 'complete';
 				if (!$objOrder->checkout())
