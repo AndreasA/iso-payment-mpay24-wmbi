@@ -33,18 +33,6 @@
  */
 class PaymentMPay24WMBI extends IsotopePayment
 {
-
-	/**
-	 * Return a list of status options.
-	 * 
-	 * @access public
-	 * @return array
-	 */
-	public function statusOptions()
-	{
-		return array('pending', 'processing', 'complete', 'on_hold');
-	}
-	
 	/**
 	 * processPayment function.
 	 * 
@@ -109,6 +97,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 			$items[] = array(
 				"productNr" => $objProduct->sku,
 				"description" => $objProduct->name . $strOptions,
+				"jahrgang" => $objProduct->jahrgang,
 				"quantity" => $objProduct->quantity_requested,
 				"itemPrice" => number_format($objProduct->original_price, 2),
 				"price" => number_format($objProduct->price, 2)
@@ -119,8 +108,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 		// Prepare Return URLs
 		if ($this->mpay24_wmbi_checkout_jumpTo) {
 			$objPage = $this->Database->prepare("SELECT id, alias FROM tl_page WHERE id=?")->limit(1)->execute($this->mpay24_wmbi_checkout_jumpTo);
-			$objMdxiTemplate->successUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row()) . "?step=complete&amp;uid=" . $objOrder->uniqid;
-			$objMdxiTemplate->errorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row()) . "?step=failed&amp;uid=" . $objOrder->uniqid;
+			$objMdxiTemplate->successUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), '/step/complete') . "?uid=" . $objOrder->uniqid;
+			$objMdxiTemplate->errorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), '/step/failed') . "?uid=" . $objOrder->uniqid;
 			$objMdxiTemplate->cancelUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/payment");
 		}
 		$strBase = $this->Environment->base;
@@ -134,6 +123,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 		// Set the session variable MPAY24_USER_DATA to provide additional data to the postsale.php script.
 		if ($_SESSION['MPAY24_USER_DATA'])
 			$strUserData = "user_data=" . urlencode($_SESSION["MPAY24_USER_DATA"]) . "&amp;";
+
 		$objMdxiTemplate->confirmationUrl = $strBase."system/modules/isotope/postsale.php?".$strUserData."mod=pay&amp;id=".$this->id;
 
 		// Customer ID
@@ -148,16 +138,20 @@ class PaymentMPay24WMBI extends IsotopePayment
 		$objMdxiTemplate->subTotal = number_format($this->Isotope->Cart->subTotal, 2);
 		$objMdxiTemplate->tax = number_format($this->Isotope->Cart->taxTotal, 2);
 		$objMdxiTemplate->price = number_format($this->Isotope->Cart->grandTotal, 2);
+		$objMdxiTemplate->surcharges = $this->Isotope->Cart->surcharges;
 
 		// Show billing address only
 		$objMdxiTemplate->showBillingAddr = true;
-		$objMdxiTemplate->billingName = $this->Isotope->Cart->billingAddress['firstname'].' '.$this->Isotope->Cart->billingAddress['lastname'];
-		$objMdxiTemplate->billingStreet = $this->Isotope->Cart->billingAddress['street_1'];
-		$objMdxiTemplate->billingStreet2 = $this->Isotope->Cart->billingAddress['street_2'];
-		$objMdxiTemplate->billingZip = $this->Isotope->Cart->billingAddress['postal'];
-		$objMdxiTemplate->billingCity = $this->Isotope->Cart->billingAddress['city'];
-		$objMdxiTemplate->billingCountry = strtoupper($this->Isotope->Cart->billingAddress['country']);
-		$objMdxiTemplate->billingEmail = $this->Isotope->Cart->billingAddress['email'];
+
+		$billingAddressTokens = $this->Isotope->Cart->billingAddress->getTokens();
+
+		$objMdxiTemplate->billingName = $billingAddressTokens['firstname'].' '.$billingAddressTokens['lastname'];
+		$objMdxiTemplate->billingStreet = $billingAddressTokens['street_1'];
+		$objMdxiTemplate->billingStreet2 = $billingAddressTokens['street_2'];
+		$objMdxiTemplate->billingZip = $billingAddressTokens['postal'];
+		$objMdxiTemplate->billingCity = $billingAddressTokens['city'];
+		$objMdxiTemplate->billingCountry = strtoupper($billingAddressTokens['country']);
+		$objMdxiTemplate->billingEmail = $billingAddressTokens['email'];
 
 		// Build MDXI
 		$strMdxi = $objMdxiTemplate->parse();
@@ -167,37 +161,55 @@ class PaymentMPay24WMBI extends IsotopePayment
 
 		$objRequest = new Request();
 		$objRequest->method = "POST";
-		$objRequest->data = "OPERATION=SELECTPAYMENT&MERCHANTID=".$this->mpay24_merchant_id."&TID=".$objOrder->id."&MDXI=".urlencode($strMdxi);
+        $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_merchant_test_id : $this->mpay24_merchant_id);
+		$objRequest->data = "OPERATION=SELECTPAYMENT&MERCHANTID=".$merchantId."&TID=".$objOrder->id."&MDXI=".urlencode($strMdxi);
 		
 		$objRequest->send($this->mpay24_wmbi_test_mode? $this->mpay24_wmbi_test_url : $this->mpay24_wmbi_prod_url);
 
-		// Analyze response
-		$parts = explode("&", $objRequest->response);
-		foreach($parts as $part) {
-			$param = explode("=", $part);
-			switch (strtoupper($param[0])) {
-				case "STATUS": 
-					$strStatus = strtoupper($param[1]);
-					break;
-				case "RETURNCODE":
-					$strReturnCode = strtoupper($param[1]);
-					break;
-				case "LOCATION":
-					$strLocation = urldecode($param[1]);
+		$strStatus = NULL;
+		$strReturnCode = NULL;
+		$error = false;
+		$httpError = false;
+		if (!$objRequest->hasError())
+		{
+			// Analyze response
+			$parts = explode("&", $objRequest->response);
+            $strLocation = '';
+			foreach($parts as $part) {
+				$param = explode("=", $part);
+				switch (strtoupper($param[0])) {
+					case "STATUS": 
+						$strStatus = strtoupper(urldecode($param[1]));
+						break;
+					case "RETURNCODE":
+						$strReturnCode = strtoupper(urldecode($param[1]));
+						break;
+					case "LOCATION":
+						$strLocation = urldecode($param[1]);
+				}
 			}
+
+			if ($strStatus == "OK" && $strReturnCode == "REDIRECT")
+				$this->redirect($strLocation);
+			else {
+				$error = true;
+				// Log the error
+				$this->log_error("ERROR:" . urldecode($objRequest->response));
+				$this->log("mPay24 reports an error: " . urldecode($objRequest->response), "PaymentMPay24WMBI checkoutForm()", TL_ERROR);
+			}
+		} else {
+			$error = true;
+			$httpError = true;
 		}
 
-		if ($strStatus == "OK" && $strReturnCode == "REDIRECT")
-			$this->redirect($strLocation);
-		else {
-			// Log the error
-			$this->log_error("ERROR:" . urldecode($objRequest->response));
-			$this->log("mPay24 reports an error: " . urldecode($objRequest->response), "PaymentMPay24WMBI checkoutForm()", TL_ERROR);
-
+		if ($error) {
 			// Redirect to checkout/failure page
-			if ($this->mpay24_checkout_jumpTo) {
-				$objPage = $this->Database->prepare("SELECT id, alias FROM tl_page WHERE id=?")->limit(1)->execute($this->mpay24_checkout_jumpTo);
+			if ($this->mpay24_wmbi_checkout_jumpTo) {
+				$objPage = $this->Database->prepare("SELECT id, alias FROM tl_page WHERE id=?")->limit(1)->execute($this->mpay24_wmbi_checkout_jumpTo);
 				$strErrorUrl = $this->Environment->base.$this->generateFrontendUrl($objPage->row(), "/step/failed");
+				if (($strStatus == 'ERROR' && $strReturnCode == 'ACCESS_DENIED') || $httpError) {
+					$strErrorUrl .= '?reason=mpay24_not_available';
+				}
 				$this->redirect($strErrorUrl);
 			}
 		}
@@ -211,114 +223,143 @@ class PaymentMPay24WMBI extends IsotopePayment
 	 */
 	public function processPostSale() 
 	{
-		$objRequest = new Request();
-		$objRequest->method = "POST";
-		$objRequest->data = "OPERATION=TRANSACTIONSTATUS&MERCHANTID=".$this->mpay24_merchant_id."&TID=".$this->Input->get("TID");
-		$objRequest->send($this->mpay24_wmbi_test_mode? $this->mpay24_wmbi_test_url : $this->mpay24_wmbi_prod_url);
+		$postSaleError = false;
+		try {
+			$checkIp = ($this->mpay24_wmbi_test_mode ? $this->mpay24_wmbi_test_authorized_ip : $this->mpay24_wmbi_prod_authorized_ip);
+			$requestIp = $this->Environment->ip;
 
-		if ($objRequest->hasError())
-		{
-			$this->log('Request Error: ' . $objRequest->error, 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			exit;
-		}
-		$this->log_confirmation("Requested Transaction Status: " . urldecode($objRequest->response));
+			if (!empty($checkIp) && !empty($requestIp) && ($requestIp == $checkIp)) {
+				$objRequest = new Request();
+				$objRequest->method = "POST";
+                $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_merchant_test_id : $this->mpay24_merchant_id);
+				$objRequest->data = "OPERATION=TRANSACTIONSTATUS&MERCHANTID=".$merchantId."&TID=".$this->Input->get("TID");
+				$objRequest->send($this->mpay24_wmbi_test_mode? $this->mpay24_wmbi_test_url : $this->mpay24_wmbi_prod_url);
 
-		// Split lines, since answer is delivered in two lines
-		$lines = explode("\n", $objRequest->response);
-
-		// Analyzing first line of response
-		$parts = explode("&", $lines[0]);
-		foreach($parts as $part) {
-			$param = explode("=", $part);
-			switch (strtoupper($param[0])) {
-				case "STATUS": 
-					$strResponseStatus = strtoupper($param[1]);
-					break;
-			}
-		}
-
-		if ($strResponseStatus != "OK") {
-			$this->log('Couldn\'t verify transaction status for order ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			return;
-		}
-
-		// Analyzing second line of response
-		$parts = explode("&", $lines[1]);
-		foreach($parts as $part) {
-			$param = explode("=", $part);
-			switch (strtoupper($param[0])) {
-				case "STATUS": 
-					$strTransactionStatus = strtoupper($param[1]);
-					break;
-			}
-		}
-
-		// Comparing statuses
-		if (strtoupper($this->Input->get("STATUS")) != $strTransactionStatus) {
-			$this->log('Transaction statuses do not match for order ' . $this->Input->get('TID') . ': Initial status: ' . $this->Input->get("STATUS") . ", Verified status: " . $strTransactionStatus, 'PaymentMPay24 processPostSale()', TL_ERROR);
-			return;
-		}
-
-		$objOrder = new IsotopeOrder();
-		if (!$objOrder->findBy('id', $this->Input->get('TID')))
-		{
-			$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-			return;
-		}
-
-		// Set the current system to the language when the user placed the order.
-		// This will result in correct e-mails and payment description.
-		$GLOBALS['TL_LANGUAGE'] = $objOrder->language;
-		$this->loadLanguageFile('default');
-		
-		// Load / initialize data
-		$arrPayment = deserialize($objOrder->payment_data, true);
-		
-		// Store request data in order for future references
-		$arrPayment['POSTSALE'][] = $_GET;
-		
-		$arrData = $objOrder->getData();
-		$arrData['old_payment_status'] = $arrPayment['status'];
-		
-		$arrPayment['status'] = $this->Input->get('STATUS');
-		$arrData['new_payment_status'] = $arrPayment['status'];
-		
-		// Store payment data
-		$objOrder->payment_data = $arrPayment;
-
-		switch(strtoupper($this->Input->get('STATUS')))
-		{
-			case 'RESERVED':
-				break;
-			case 'BILLED':
-				if ($objOrder->status == 'complete')
+				if ($objRequest->hasError())
 				{
-					$this->log('Order ID ' . $this->Input->get('TID') . ' already complete', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+					$this->log('Request Error: ' . $objRequest->error, 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+					exit;
+				}
+				$this->log_confirmation("Requested Transaction Status: " . urldecode($objRequest->response));
+
+				// Split lines, since answer is delivered in two lines
+				$lines = explode("\n", $objRequest->response);
+
+				$strResponseStatus = NULL;
+
+				// Analyzing first line of response
+				$parts = explode("&", $lines[0]);
+				foreach($parts as $part) {
+					$param = explode("=", $part);
+					switch (strtoupper($param[0])) {
+						case "STATUS": 
+							$strResponseStatus = strtoupper($param[1]);
+							break;
+					}
+				}
+
+				if ($strResponseStatus != "OK") {
+					$this->log('Couldn\'t verify transaction status for order ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 					return;
 				}
-				$objOrder->date_payed = time();
-				$objOrder->new_order_status = 'complete';
-				if (!$objOrder->checkout())
-				{
-					$this->log('Checkout for order ID ' . $this->Input->get('TID') . ' failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-					return;
-				} 
-				$this->log('Payments billed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
-				break;
-			case 'CREDITED': // Gutgeschrieben
-			case 'REVERSED':
-			case 'SUSPENDED':
-				$objOrder->date_payed = '';
-				$objOrder->status = 'on_hold';
-				$objOrder->save();
-				$this->log('Payments reversed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-				break;
-			case 'ERROR':
-				$this->log('Error status for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
-				break;
-		}
 
-		header('HTTP/1.1 200 OK');
+				// Analyzing second line of response
+				$parts = explode("&", $lines[1]);
+				foreach($parts as $part) {
+					$param = explode("=", $part);
+					switch (strtoupper($param[0])) {
+						case "STATUS": 
+							$strTransactionStatus = strtoupper($param[1]);
+							break;
+					}
+				}
+
+				// Comparing statuses
+				if (strtoupper($this->Input->get("STATUS")) != $strTransactionStatus) {
+					$this->log('Transaction statuses do not match for order ' . $this->Input->get('TID') . ': Initial status: ' . $this->Input->get("STATUS") . ", Verified status: " . $strTransactionStatus, 'PaymentMPay24 processPostSale()', TL_ERROR);
+					$postSaleError = true;
+				}
+			
+				$objOrder = NULL;
+				if (!$postSaleError) {
+					$objOrder = new IsotopeOrder();
+					if (!$objOrder->findBy('id', $this->Input->get('TID')))
+					{
+						$this->log('Order ID "' . $this->Input->get('TID') . '" not found', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+						$postSaleError = true;
+					}
+				}
+			
+				if (!$postSaleError) {
+					// Set the current system to the language when the user placed the order.
+					// This will result in correct e-mails and payment description.
+					$GLOBALS['TL_LANGUAGE'] = $objOrder->language;
+					$this->loadLanguageFile('default');
+			
+					// Load / initialize data
+					$arrPayment = deserialize($objOrder->payment_data, true);
+			
+					// Store request data in order for future references
+					$arrPayment['POSTSALE'][] = $_GET;
+			
+					$arrData = $objOrder->getData();
+					$arrData['old_payment_status'] = $arrPayment['status'];
+			
+					$arrPayment['status'] = $this->Input->get('STATUS');
+					$arrData['new_payment_status'] = $arrPayment['status'];
+			
+					// Store payment data
+					$objOrder->payment_data = $arrPayment;
+
+					switch(strtoupper($this->Input->get('STATUS')))
+					{
+						case 'RESERVED':
+							break;
+						case 'BILLED':
+							if ($objOrder->status == $this->mpay24_billed_order_status)
+							{
+								$this->log('Order ID ' . $this->Input->get('TID') . ' already complete', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+								return;
+							}
+							$objOrder->date_payed = time();
+							$objOrder->new_order_status = $this->mpay24_billed_order_status;
+							if (!$objOrder->checkout())
+							{
+								$this->log('Checkout for order ID ' . $this->Input->get('TID') . ' failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+								$postSaleError = true;
+							}  else {
+								$this->log('Payments billed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
+							}
+							break;
+						case 'CREDITED': // Gutgeschrieben
+						case 'REVERSED':
+						case 'SUSPENDED':
+							$objOrder->date_payed = '';
+                            $objOrder->new_order_status = $this->mpay24_failed_order_status;
+                            $objOrder->status = $this->mpay24_failed_order_status;
+
+							$affectedRowsOrInsertId = $objOrder->save();
+							if ($affectedRowsOrInsertId <= 0) {
+								$postSaleError = true;
+							}
+							$this->log('Payments reversed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+							break;
+						case 'ERROR':
+							$this->log('Error status for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+							break;
+					}
+				}
+			} else {
+				$postSaleError = true;
+			}
+		} catch (Exception $exception) {
+			$postSaleError = true;
+		}
+		if (!$postSaleError) {
+			echo 'OK';
+		} else {
+			echo 'ERROR';
+		}
 		exit;
 	}
 	
