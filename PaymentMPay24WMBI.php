@@ -314,6 +314,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 					switch(strtoupper($this->Input->get('STATUS')))
 					{
 						case 'RESERVED':
+                            $objOrder->remainingPaymentAmount = $objOrder->grandTotal;
+                            $objOrder->save();
 							break;
 						case 'BILLED':
 							if ($objOrder->status == $this->mpay24_billed_order_status)
@@ -323,6 +325,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 							}
 							$objOrder->date_payed = time();
 							$objOrder->new_order_status = $this->mpay24_billed_order_status;
+                            $objOrder->remainingPaymentAmount = $objOrder->grandTotal;
 							if (!$objOrder->checkout())
 							{
 								$this->log('Checkout for order ID ' . $this->Input->get('TID') . ' failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
@@ -333,6 +336,22 @@ class PaymentMPay24WMBI extends IsotopePayment
 							break;
 						case 'CREDITED': // Gutgeschrieben
 						case 'REVERSED':
+                            $creditedAmount = floatval($this->Input->get('PRICE'));
+                            $objOrder->remainingPaymentAmount -= $creditedAmount;
+                            $objOrder->save();
+                            $this->log('Payment amount of ' . $creditedAmount . ' credited for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
+                            if ($objOrder->remainingPaymentAmount <= 0) {
+                                $objOrder->date_payed = '';
+                                $objOrder->updateOrderStatus($this->mpay24_canceled_order_status);
+                                $objOrder->new_order_status = $this->mpay24_canceled_order_status;
+                                $objOrder->status = $this->mpay24_canceled_order_status;
+                                $affectedRowsOrInsertId = $objOrder->save();
+                                if ($affectedRowsOrInsertId <= 0) {
+                                    $postSaleError = true;
+                                }
+                                $this->log('Payments canceled/reversed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
+                            }
+                            break;
 						case 'SUSPENDED':
 							$objOrder->date_payed = '';
                             $objOrder->new_order_status = $this->mpay24_failed_order_status;
@@ -342,7 +361,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 							if ($affectedRowsOrInsertId <= 0) {
 								$postSaleError = true;
 							}
-							$this->log('Payments reversed for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
+							$this->log('Payments suspended for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 							break;
 						case 'ERROR':
 							$this->log('Error status for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_ERROR);

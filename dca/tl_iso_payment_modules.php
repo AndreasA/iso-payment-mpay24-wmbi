@@ -12,7 +12,7 @@
 /*
  * palette
  */
-$GLOBALS["TL_DCA"]["tl_iso_payment_modules"]["palettes"]["mpay24_wmbi"] = "{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,minimum_total,maximum_total,countries,shipping_modules,product_types;{price_legend:hide},price,tax_class;{mpay24_wmbi_legend},mpay24_merchant_id,mpay24_merchant_test_id,mpay24_wmbi_checkout_jumpTo;mpay24_billed_order_status;mpay24_failed_order_status;{mpay24_wmbi_expert_legend:hide},mpay24_wmbi_test_mode,mpay24_wmbi_test_url,mpay24_wmbi_prod_url,mpay24_wmbi_confirmation_username,mpay24_wmbi_confirmation_password;mpay24_wmbi_prod_authorized_ip;mpay24_wmbi_test_authorized_ip;{expert_legend:hide},guests,protected;{enabled_legend},enabled";
+$GLOBALS["TL_DCA"]["tl_iso_payment_modules"]["palettes"]["mpay24_wmbi"] = "{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,minimum_total,maximum_total,countries,shipping_modules,product_types;{price_legend:hide},price,tax_class;{mpay24_wmbi_legend},mpay24_merchant_id,mpay24_merchant_test_id,mpay24_wmbi_checkout_jumpTo;mpay24_billed_order_status;mpay24_failed_order_status;mpay24_canceled_order_status;{mpay24_wmbi_expert_legend:hide},mpay24_wmbi_test_mode,mpay24_wmbi_test_url,mpay24_wmbi_prod_url,mpay24_wmbi_confirmation_username,mpay24_wmbi_confirmation_password;mpay24_wmbi_prod_authorized_ip;mpay24_wmbi_test_authorized_ip;{expert_legend:hide},guests,protected;{enabled_legend},enabled";
  
 
 /*
@@ -103,6 +103,14 @@ $GLOBALS["TL_DCA"]["tl_iso_payment_modules"]["fields"]["mpay24_billed_order_stat
 
 $GLOBALS["TL_DCA"]["tl_iso_payment_modules"]["fields"]["mpay24_failed_order_status"] = array(
     'label'                   => &$GLOBALS['TL_LANG']['tl_iso_payment_modules']['mpay24_failed_order_status'],
+    'exclude'                 => true,
+    'inputType'               => 'select',
+    'options'                 => IsotopeBackend::getOrderStatus(),
+    'eval'                    => array('mandatory'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50'),
+);
+
+$GLOBALS["TL_DCA"]["tl_iso_payment_modules"]["fields"]["mpay24_canceled_order_status"] = array(
+    'label'                   => &$GLOBALS['TL_LANG']['tl_iso_payment_modules']['mpay24_canceled_order_status'],
     'exclude'                 => true,
     'inputType'               => 'select',
     'options'                 => IsotopeBackend::getOrderStatus(),

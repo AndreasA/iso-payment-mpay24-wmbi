@@ -22,15 +22,12 @@ CREATE TABLE `tl_iso_payment_modules` (
   `mpay24_wmbi_confirmation_password` varchar(255) NOT NULL default '',
   `mpay24_billed_order_status` int(10) unsigned NOT NULL default '0',
   `mpay24_failed_order_status` int(10) unsigned NOT NULL default '0',
+  `mpay24_canceled_order_status` int(10) unsigned NOT NULL default '0',
   `mpay24_wmbi_prod_authorized_ip` varchar(255) NOT NULL default '213.164.25.245',
   `mpay24_wmbi_test_authorized_ip` varchar(255) NOT NULL default '213.164.23.169',
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
--- --------------------------------------------------------
-
-
-
--- PRODUCT ATTRIBUTES START --
--- PRODUCT ATTRIBUTES STOP --
-
+CREATE TABLE `tl_iso_orders` (
+  `remainingPaymentAmount` decimal(12,2) NOT NULL default '0.00',
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;

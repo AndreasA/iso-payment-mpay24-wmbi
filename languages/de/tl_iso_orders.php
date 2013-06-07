@@ -12,5 +12,6 @@
  * fields
  */
 $GLOBALS["TL_LANG"]["tl_iso_orders"]["id"]	= array("Trans.-ID", "");
+$GLOBALS["TL_LANG"]["tl_iso_orders"]["remainingPaymentAmount"]	= array("Verbleibender Zahlungsbetrag (nach gutgeschriebenen Zahlungen)", "");
 
 ?>

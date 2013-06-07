@@ -29,6 +29,7 @@ $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_wmbi_confirmation_username
 $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_wmbi_confirmation_password"] = array("Confirmation Interface HTTP AUTH Passwort", "Geben Sie hier das Passwort ein, falls Sie das Confirmation Interface (postsale.php) per HTTP-Authentifizierung schüthen.");
 $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_billed_order_status"] = array('Status nach erfolgreicher Abbuchung/Bezahlung', '');
 $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_failed_order_status"] = array('Status bei fehlgeschlagener Bezahlung', '');
+$GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_canceled_order_status"] = array('Status bei stornierung der Bestellung/Zahlung', '');
 $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_wmbi_test_authorized_ip"] = array('mPay24 Test-System IP-Adresse benötigt/verwendet für PostSale', '');
 $GLOBALS["TL_LANG"]["tl_iso_payment_modules"]["mpay24_wmbi_prod_authorized_ip"] = array('mPay24 Live-System IP-Adresse benötigt/verwendet für PostSale', '');
 
