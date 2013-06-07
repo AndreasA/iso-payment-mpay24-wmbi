@@ -28,7 +28,7 @@
  * @filesource
  */
 
-$GLOBALS['TL_DCA']['tl_iso_orders']['palettes']['default'] = str_replace(';{email_legend:hide}',',remainingPaymentAmount;{email_legend:hide}',$GLOBALS['TL_DCA']['tl_iso_orders']['palettes']['default']);
+$GLOBALS['TL_DCA']['tl_iso_orders']['palettes']['default'] = str_replace(';{email_legend:hide}',',mpay24_wmbi_remaining_payment_amount;{email_legend:hide}',$GLOBALS['TL_DCA']['tl_iso_orders']['palettes']['default']);
 
 /**
  * Fields
@@ -44,8 +44,8 @@ $GLOBALS['TL_DCA']['tl_iso_orders']['fields']['id']['flag'] = 12;
 
 $GLOBALS['TL_DCA']['tl_iso_orders']['fields']['order_id']['flag'] = 12;
 
-$GLOBALS['TL_DCA']['tl_iso_orders']['fields']['remainingPaymentAmount'] = array(
-    'label'	=> &$GLOBALS['TL_LANG']['tl_iso_orders']['remainingPaymentAmount'],
+$GLOBALS['TL_DCA']['tl_iso_orders']['fields']['mpay24_wmbi_remaining_payment_amount'] = array(
+    'label'	=> &$GLOBALS['TL_LANG']['tl_iso_orders']['mpay24_wmbi_remaining_payment_amount'],
     'inputType' => 'text',
     'eval' => array('readonly' => true, 'disabled' => true)
 );

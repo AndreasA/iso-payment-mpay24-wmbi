@@ -161,7 +161,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 
 		$objRequest = new Request();
 		$objRequest->method = "POST";
-        $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_merchant_test_id : $this->mpay24_merchant_id);
+        $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_wmbi_merchant_test_id : $this->mpay24_wmbi_merchant_id);
 		$objRequest->data = "OPERATION=SELECTPAYMENT&MERCHANTID=".$merchantId."&TID=".$objOrder->id."&MDXI=".urlencode($strMdxi);
 		
 		$objRequest->send($this->mpay24_wmbi_test_mode? $this->mpay24_wmbi_test_url : $this->mpay24_wmbi_prod_url);
@@ -231,7 +231,7 @@ class PaymentMPay24WMBI extends IsotopePayment
 			if (!empty($checkIp) && !empty($requestIp) && ($requestIp == $checkIp)) {
 				$objRequest = new Request();
 				$objRequest->method = "POST";
-                $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_merchant_test_id : $this->mpay24_merchant_id);
+                $merchantId = ($this->mpay24_wmbi_test_mode ? $this->mpay24_wmbi_merchant_test_id : $this->mpay24_wmbi_merchant_id);
 				$objRequest->data = "OPERATION=TRANSACTIONSTATUS&MERCHANTID=".$merchantId."&TID=".$this->Input->get("TID");
 				$objRequest->send($this->mpay24_wmbi_test_mode? $this->mpay24_wmbi_test_url : $this->mpay24_wmbi_prod_url);
 
@@ -314,18 +314,18 @@ class PaymentMPay24WMBI extends IsotopePayment
 					switch(strtoupper($this->Input->get('STATUS')))
 					{
 						case 'RESERVED':
-                            $objOrder->remainingPaymentAmount = $objOrder->grandTotal;
+                            $objOrder->mpay24_wmbi_remaining_payment_amount = $objOrder->grandTotal;
                             $objOrder->save();
 							break;
 						case 'BILLED':
-							if ($objOrder->status == $this->mpay24_billed_order_status)
+							if ($objOrder->status == $this->mpay24_wmbi_billed_order_status)
 							{
 								$this->log('Order ID ' . $this->Input->get('TID') . ' already complete', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
 								return;
 							}
 							$objOrder->date_payed = time();
-							$objOrder->new_order_status = $this->mpay24_billed_order_status;
-                            $objOrder->remainingPaymentAmount = $objOrder->grandTotal;
+							$objOrder->new_order_status = $this->mpay24_wmbi_billed_order_status;
+                            $objOrder->mpay24_wmbi_remaining_payment_amount = $objOrder->grandTotal;
 							if (!$objOrder->checkout())
 							{
 								$this->log('Checkout for order ID ' . $this->Input->get('TID') . ' failed', 'PaymentMPay24WMBI processPostSale()', TL_ERROR);
@@ -336,15 +336,16 @@ class PaymentMPay24WMBI extends IsotopePayment
 							break;
 						case 'CREDITED': // Gutgeschrieben
 						case 'REVERSED':
-                            $creditedAmount = floatval($this->Input->get('PRICE'));
-                            $objOrder->remainingPaymentAmount -= $creditedAmount;
+                            $creditedAmount = intval($this->Input->get('PRICE'));
+							$creditedAmount = bcdiv($creditedAmount, 100.0, 2);
+                            $objOrder->mpay24_wmbi_remaining_payment_amount -= $creditedAmount;
                             $objOrder->save();
                             $this->log('Payment amount of ' . $creditedAmount . ' credited for order ID ' . $this->Input->get('TID'), 'PaymentMPay24WMBI processPostSale()', TL_GENERAL);
-                            if ($objOrder->remainingPaymentAmount <= 0) {
+                            if ($objOrder->mpay24_wmbi_remaining_payment_amount <= 0) {
                                 $objOrder->date_payed = '';
-                                $objOrder->updateOrderStatus($this->mpay24_canceled_order_status);
-                                $objOrder->new_order_status = $this->mpay24_canceled_order_status;
-                                $objOrder->status = $this->mpay24_canceled_order_status;
+                                $objOrder->updateOrderStatus($this->mpay24_wmbi_canceled_order_status);
+                                $objOrder->new_order_status = $this->mpay24_wmbi_canceled_order_status;
+                                $objOrder->status = $this->mpay24_wmbi_canceled_order_status;
                                 $affectedRowsOrInsertId = $objOrder->save();
                                 if ($affectedRowsOrInsertId <= 0) {
                                     $postSaleError = true;
@@ -354,8 +355,8 @@ class PaymentMPay24WMBI extends IsotopePayment
                             break;
 						case 'SUSPENDED':
 							$objOrder->date_payed = '';
-                            $objOrder->new_order_status = $this->mpay24_failed_order_status;
-                            $objOrder->status = $this->mpay24_failed_order_status;
+                            $objOrder->new_order_status = $this->mpay24_wmbi_failed_order_status;
+                            $objOrder->status = $this->mpay24_wmbi_failed_order_status;
 
 							$affectedRowsOrInsertId = $objOrder->save();
 							if ($affectedRowsOrInsertId <= 0) {

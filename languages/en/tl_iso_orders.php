@@ -12,6 +12,6 @@
  * fields
  */
 $GLOBALS["TL_LANG"]["tl_iso_orders"]["id"]	= array("Trans.-ID", "");
-$GLOBALS["TL_LANG"]["tl_iso_orders"]["remainingPaymentAmount"]	= array("Remaining Payment Amount (after credited payments)", "");
+$GLOBALS["TL_LANG"]["tl_iso_orders"]["mpay24_wmbi_remaining_payment_amount"]	= array("Remaining Payment Amount (after credited payments)", "");
 
 ?>
