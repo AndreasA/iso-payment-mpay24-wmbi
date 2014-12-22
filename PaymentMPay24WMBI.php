@@ -99,8 +99,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 				"description" => $objProduct->name . $strOptions,
 				"jahrgang" => $objProduct->jahrgang,
 				"quantity" => $objProduct->quantity_requested,
-				"itemPrice" => number_format($objProduct->original_price, 2),
-				"price" => number_format($objProduct->price, 2)
+				"itemPrice" => number_format($objProduct->price, 2, '.', ''),
+				"price" => number_format($objProduct->total_price, 2, '.', '')
 			);
 		}
 		$objMdxiTemplate->items = $items;
@@ -135,8 +135,8 @@ class PaymentMPay24WMBI extends IsotopePayment
 		$objMdxiTemplate->showShoppingCart = true;
 		$objMdxiTemplate->tid = $objOrder->id;
 		$objMdxiTemplate->currency = $this->Isotope->Config->currency;
-		$objMdxiTemplate->subTotal = number_format($this->Isotope->Cart->subTotal, 2);
-		$objMdxiTemplate->tax = number_format($this->Isotope->Cart->taxTotal, 2);
+		$objMdxiTemplate->subTotal = number_format($this->Isotope->Cart->subTotal, 2, '.', '');
+		$objMdxiTemplate->tax = number_format($this->Isotope->Cart->taxTotal, 2, '.', '');
 		$objMdxiTemplate->price = number_format($this->Isotope->Cart->grandTotal, 2);
 		$objMdxiTemplate->surcharges = $this->Isotope->Cart->surcharges;
 
